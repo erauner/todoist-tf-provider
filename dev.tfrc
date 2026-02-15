@@ -1,7 +1,9 @@
 provider_installation {
   dev_overrides {
     # Provider address must match required_providers.todoist.source
-    "github.com/andreaswwilson/todoist" = "/Users/erauner/go/bin"
+    # Update this path to wherever `go env GOPATH` points on your machine
+    # (the provider binary should be in `$(go env GOPATH)/bin`).
+    "github.com/andreaswwilson/todoist" = "/ABS/PATH/TO/YOUR/GOPATH/bin"
   }
   direct {}
 }

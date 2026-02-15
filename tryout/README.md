@@ -14,7 +14,9 @@ go install
 2. Run Terraform using the repo-local CLI config so Terraform finds the binary:
 
 ```bash
-export TF_CLI_CONFIG_FILE="$PWD/../dev.tfrc"
+cp ../dev.tfrc ../dev.tfrc.local
+$EDITOR ../dev.tfrc.local
+export TF_CLI_CONFIG_FILE="$PWD/../dev.tfrc.local"
 export TODOIST_TOKEN="..."
 terraform init
 terraform plan
