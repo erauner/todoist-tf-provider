@@ -39,13 +39,21 @@ func NewClient(apiKey string) (*Client, error) {
 }
 
 func init() {
-	file, err := os.OpenFile("todoistClient.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err == nil {
-		log.SetReportCaller(true)
-		log.SetOutput(file)
-	} else {
+	// Avoid writing log files into whatever directory terraform is executed from.
+	// Use stderr by default; users can enable TF_LOG / TF_LOG_PATH if needed.
+	if os.Getenv("TODOIST_TF_PROVIDER_LOG_FILE") == "1" {
+		file, err := os.OpenFile("todoistClient.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err == nil {
+			log.SetReportCaller(true)
+			log.SetOutput(file)
+			return
+		}
 		log.Info("Failed to log to file, using default stderr")
+		return
 	}
+	// default: stderr
+	log.SetReportCaller(false)
+	log.SetOutput(os.Stderr)
 	// log.SetLevel(log.DebugLevel)
 
 }
