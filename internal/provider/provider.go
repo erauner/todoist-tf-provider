@@ -89,7 +89,6 @@ func (p *TodoistProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 	client, err := client.NewClient(token)
 	tflog.Info(ctx, "Client setup ok!")
-	tflog.Info(ctx, token)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Create Todoist API Client",

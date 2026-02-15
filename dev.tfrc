@@ -1,0 +1,7 @@
+provider_installation {
+  dev_overrides {
+    # Provider address must match required_providers.todoist.source
+    "github.com/andreaswwilson/todoist" = "/Users/erauner/go/bin"
+  }
+  direct {}
+}
