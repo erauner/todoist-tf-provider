@@ -2,7 +2,7 @@ terraform {
   required_providers {
     todoist = {
       # This provider is not published on the public registry; use TF_CLI_CONFIG_FILE + dev_overrides.
-      source = "github.com/andreaswwilson/todoist"
+      source = "andreaswwilson/todoist"
     }
   }
 }
