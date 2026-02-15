@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -25,34 +26,67 @@ type Project struct {
 	ParentID       string `json:"parent_id"`
 }
 
-func (c *Client) GetProject(ctx context.Context, projectId string) (*Project, error) {
-	// get all projects to check if the project exists or not
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/projects", c.BaseURL), nil)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	allProjects := []Project{}
-	if _, _, err := c.sendRequest(req, &allProjects); err != nil {
-		return nil, err
-	}
-	log.WithFields(log.Fields{
-		"Projects": fmt.Sprintf("%+v", allProjects),
-	}).Info("Projects read")
+// projectV1 matches the Unified API "project" response shape (subset used by this provider).
+// Some fields differ from REST v2, so we map them into the legacy Project struct above to
+// preserve the Terraform schema.
+type projectV1 struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Color        any    `json:"color"` // string name or integer id
+	IsShared     bool   `json:"is_shared"`
+	ChildOrder   int    `json:"child_order"`
+	IsFavorite   bool   `json:"is_favorite"`
+	InboxProject bool   `json:"inbox_project"`
+	IsTeamInbox  bool   `json:"is_team_inbox"`
+	ViewStyle    string `json:"view_style"`
+	URL          string `json:"url"`
+	ParentID     string `json:"parent_id"`
+}
 
-	// Check if project exists in list of active projects
-	exists := false
-	for _, project := range allProjects {
-		if project.ID == projectId {
-			exists = true
-			break
+func colorToString(v any) string {
+	switch c := v.(type) {
+	case nil:
+		return ""
+	case string:
+		return c
+	case float64:
+		// JSON numbers decode as float64.
+		if name, ok := todoistColorIDToName[int(c)]; ok {
+			return name
 		}
+		return strconv.Itoa(int(c))
+	default:
+		return fmt.Sprintf("%v", v)
 	}
-	res := Project{}
-	if !exists {
-		return nil, fmt.Errorf("unable to find projects with id: %s", projectId)
-	}
-	req, err = http.NewRequest("GET", fmt.Sprintf("%s/projects/%s", c.BaseURL, projectId), nil)
+}
+
+// Todoist color IDs table (subset).
+// This is used when the Unified API returns an integer color id instead of a name.
+var todoistColorIDToName = map[int]string{
+	30: "berry_red",
+	31: "red",
+	32: "orange",
+	33: "yellow",
+	34: "olive_green",
+	35: "lime_green",
+	36: "green",
+	37: "mint_green",
+	38: "teal",
+	39: "sky_blue",
+	40: "light_blue",
+	41: "blue",
+	42: "grape",
+	43: "violet",
+	44: "lavender",
+	45: "magenta",
+	46: "salmon",
+	47: "charcoal",
+	48: "grey",
+	49: "taupe",
+}
+
+func (c *Client) GetProject(ctx context.Context, projectId string) (*Project, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/projects/%s", c.BaseURL, projectId), nil)
 	log.WithFields(log.Fields{
 		"projectId": projectId,
 	}).Info("Reading project")
@@ -60,10 +94,26 @@ func (c *Client) GetProject(ctx context.Context, projectId string) (*Project, er
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	_, _, err = c.sendRequest(req, &res)
+	var v1 projectV1
+	_, _, err = c.sendRequest(req, &v1)
 	if err != nil {
 		return nil, err
 	}
+
+	res := Project{
+		ID:             v1.ID,
+		Name:           v1.Name,
+		Color:          colorToString(v1.Color),
+		IsShared:       v1.IsShared,
+		Order:          v1.ChildOrder,
+		IsFavorite:     v1.IsFavorite,
+		IsInboxProject: v1.InboxProject,
+		IsTeamInbox:    v1.IsTeamInbox,
+		ViewStyle:      v1.ViewStyle,
+		URL:            v1.URL,
+		ParentID:       v1.ParentID,
+	}
+
 	log.WithFields(log.Fields{
 		"Project": fmt.Sprintf("%+v", res),
 	}).Debug("Project read")

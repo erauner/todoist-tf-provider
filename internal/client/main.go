@@ -13,7 +13,10 @@ import (
 )
 
 const (
-	BaseURL = "https://api.todoist.com/rest/v2"
+	// Todoist Unified API base URL.
+	//
+	// Docs: https://developer.todoist.com/api/v1/
+	BaseURL = "https://api.todoist.com/api/v1"
 )
 
 type Client struct {
